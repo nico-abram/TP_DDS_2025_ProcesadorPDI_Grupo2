@@ -41,9 +41,9 @@ public class Fachada implements FachadaProcesadorPdI {
 
     @Override
     public PdIDTO procesar(PdIDTO pdiDTORecibido) {
-        if (!fachadaSolicitudes.estaActivo(pdiDTORecibido.hechoId())) {
+/*        if (!fachadaSolicitudes.estaActivo(pdiDTORecibido.hechoId())) {
             throw new IllegalStateException("El hecho está inactivo o fue borrado");
-        }
+        }*/
 
         PdI nuevoPdI = recibirPdIDTO(pdiDTORecibido);
 
