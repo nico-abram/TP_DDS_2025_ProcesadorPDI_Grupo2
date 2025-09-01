@@ -1,5 +1,8 @@
 package ar.edu.utn.dds.k3003.app;
 
+import ar.edu.utn.dds.k3003.exceptions.domain.pdi.HechoInactivoException;
+import ar.edu.utn.dds.k3003.exceptions.domain.pdi.HechoInexistenteException;
+import ar.edu.utn.dds.k3003.exceptions.infrastructure.solicitudes.SolicitudesCommunicationException;
 import ar.edu.utn.dds.k3003.facades.FachadaProcesadorPdI;
 import ar.edu.utn.dds.k3003.facades.FachadaSolicitudes;
 import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
@@ -11,6 +14,7 @@ import lombok.Getter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,9 +45,27 @@ public class Fachada implements FachadaProcesadorPdI {
 
     @Override
     public PdIDTO procesar(PdIDTO pdiDTORecibido) {
-/*        if (!fachadaSolicitudes.estaActivo(pdiDTORecibido.hechoId())) {
-            throw new IllegalStateException("El hecho está inactivo o fue borrado");
-        }*/
+        final String hechoId = pdiDTORecibido.hechoId();
+        final boolean activo;
+
+//        if (!fachadaSolicitudes.estaActivo(pdiDTORecibido.hechoId())) {
+//            throw new IllegalStateException("El hecho está inactivo o fue borrado");
+//        }
+
+        try {
+            activo = fachadaSolicitudes.estaActivo(hechoId);
+        } catch (java.util.NoSuchElementException e) {
+            // El proxy tira esto si no hay solicitud para ese ID
+            throw new HechoInexistenteException(hechoId, e);
+        } catch (RestClientException e) {
+            // Timeouts, 5xx, DNS, etc.
+            throw new SolicitudesCommunicationException(
+                    "Fallo al consultar 'Solicitudes' para hecho " + hechoId, e);
+        }
+
+        if (!activo) {
+            throw new HechoInactivoException(hechoId);
+        }
 
         PdI nuevoPdI = recibirPdIDTO(pdiDTORecibido);
 

@@ -10,32 +10,53 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+// IMPORTS de tus excepciones personalizadas:
+import ar.edu.utn.dds.k3003.exceptions.domain.pdi.HechoInactivoException;
+import ar.edu.utn.dds.k3003.exceptions.domain.pdi.HechoInexistenteException;
+import ar.edu.utn.dds.k3003.exceptions.infrastructure.solicitudes.SolicitudesCommunicationException;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<Map<String, String>> handleNoSuchElementException(
-            NoSuchElementException e) {
-        Map<String, String> response = new HashMap<>();
-        response.put("error", "Not Found");
-        response.put("message", e.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    public ResponseEntity<Map<String, String>> handleNoSuchElementException(NoSuchElementException e) {
+        return build(HttpStatus.NOT_FOUND, "Not Found", e.getMessage());
     }
 
     @ExceptionHandler(InvalidParameterException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidParameterException(
-            InvalidParameterException e) {
-        Map<String, String> response = new HashMap<>();
-        response.put("error", "Bad Request");
-        response.put("message", e.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, String>> handleInvalidParameterException(InvalidParameterException e) {
+        return build(HttpStatus.BAD_REQUEST, "Bad Request", e.getMessage());
     }
+
+    // === Nuevos handlers ===
+
+    @ExceptionHandler(HechoInactivoException.class)
+    public ResponseEntity<Map<String, String>> handleHechoInactivo(HechoInactivoException e) {
+        return build(HttpStatus.CONFLICT, "Hecho Inactivo", e.getMessage());
+    }
+
+    @ExceptionHandler(HechoInexistenteException.class)
+    public ResponseEntity<Map<String, String>> handleHechoInexistente(HechoInexistenteException e) {
+        return build(HttpStatus.NOT_FOUND, "Hecho Inexistente", e.getMessage());
+    }
+
+    @ExceptionHandler(SolicitudesCommunicationException.class)
+    public ResponseEntity<Map<String, String>> handleSolicitudesCommunication(SolicitudesCommunicationException e) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "Solicitudes Communication Error", e.getMessage());
+    }
+
+    // =======================
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception e) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred");
+    }
+
+    // Helper para armar la respuesta homogénea
+    private ResponseEntity<Map<String, String>> build(HttpStatus status, String error, String message) {
         Map<String, String> response = new HashMap<>();
-        response.put("error", "Internal Server Error");
-        response.put("message", "An unexpected error occurred");
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        response.put("error", error);
+        response.put("message", message);
+        return new ResponseEntity<>(response, status);
     }
 }
