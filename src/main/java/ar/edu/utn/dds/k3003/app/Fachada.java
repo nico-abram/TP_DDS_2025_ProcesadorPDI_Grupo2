@@ -1,174 +1,85 @@
 package ar.edu.utn.dds.k3003.app;
 
-import ar.edu.utn.dds.k3003.exceptions.domain.pdi.HechoInactivoException;
-import ar.edu.utn.dds.k3003.exceptions.domain.pdi.HechoInexistenteException;
-import ar.edu.utn.dds.k3003.exceptions.infrastructure.solicitudes.SolicitudesCommunicationException;
+import ar.edu.utn.dds.k3003.client.SolicitudesProxy;
 import ar.edu.utn.dds.k3003.facades.FachadaProcesadorPdI;
 import ar.edu.utn.dds.k3003.facades.FachadaSolicitudes;
 import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
 import ar.edu.utn.dds.k3003.model.PdI;
 import ar.edu.utn.dds.k3003.repository.InMemoryPdIRepo;
 import ar.edu.utn.dds.k3003.repository.PdIRepository;
-
-import lombok.Getter;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 public class Fachada implements FachadaProcesadorPdI {
 
-    private FachadaSolicitudes fachadaSolicitudes;
+  private PdIRepository pdiRepository;
+  private Integer pdiID = 0;
+  private FachadaSolicitudes fachadaSolicitudes;
+  private ObjectMapper objectMapper;
 
-    @Getter private PdIRepository pdiRepository;
+  public Fachada() {
+    this.pdiRepository = new InMemoryPdIRepo();
+  }
 
-    private final AtomicLong generadorID = new AtomicLong(1);
+  @Autowired
+  public Fachada(PdIRepository pdiRepository) {
+    this.pdiRepository = pdiRepository;
+    this.objectMapper = new ObjectMapper();
+    this.fachadaSolicitudes = new SolicitudesProxy(objectMapper);
+  }
 
-    protected Fachada() {
-        this.pdiRepository = new InMemoryPdIRepo();
+  public PdIDTO procesar(PdIDTO var1) throws IllegalStateException {
+
+
+    if(fachadaSolicitudes.estaActivo(var1.hechoId())) {
+      if(buscarPorHecho(var1.hechoId()).isEmpty()) {
+        PdI pdiNuevo = new PdI(var1.id(), var1.hechoId());
+        //pdiID++;
+        this.pdiRepository.save(pdiNuevo);
+        return new PdIDTO(pdiNuevo.getId().toString(), pdiNuevo.getHecho());
+      }
+      else {
+        return buscarPorHecho(var1.hechoId()).get(0);
+      }
+    } else {
+      throw new IllegalStateException("No esta activo");
+    }
+  }
+
+
+  public PdIDTO buscarPdIPorId(String var1) throws NoSuchElementException {
+    Optional<PdI> pdIOptional = this.pdiRepository.findById(var1);
+    if (pdIOptional.isEmpty()) {
+      throw new NoSuchElementException(pdIOptional + " no existe");
     }
 
-    @Autowired
-    public Fachada(PdIRepository pdiRepository) {
-        this.pdiRepository = pdiRepository;
-    }
+    PdI pdi = pdIOptional.get();
 
-    @Override
-    public void setFachadaSolicitudes(FachadaSolicitudes fachadaSolicitudes) {
-        this.fachadaSolicitudes = fachadaSolicitudes;
-    }
+    return new PdIDTO(pdi.getId().toString(), pdi.getHecho());
+  }
 
-    @Override
-    public PdIDTO procesar(PdIDTO pdiDTORecibido) {
-        final String hechoId = pdiDTORecibido.hechoId();
-        final boolean activo;
 
-//        if (!fachadaSolicitudes.estaActivo(pdiDTORecibido.hechoId())) {
-//            throw new IllegalStateException("El hecho está inactivo o fue borrado");
-//        }
+  public List<PdIDTO> buscarPorHecho(String var1) throws NoSuchElementException {
 
-        try {
-            activo = fachadaSolicitudes.estaActivo(hechoId);
-        } catch (java.util.NoSuchElementException e) {
-            // El proxy tira esto si no hay solicitud para ese ID
-            throw new HechoInexistenteException(hechoId, e);
-        } catch (RestClientException e) {
-            // Timeouts, 5xx, DNS, etc.
-            throw new SolicitudesCommunicationException(
-                    "Fallo al consultar 'Solicitudes' para hecho " + hechoId, e);
-        }
+    List<PdI> pdIList = this.pdiRepository.findByHecho(var1);
 
-        if (!activo) {
-            throw new IllegalStateException(hechoId);
-        }
+    return pdIList.stream().map(pdi -> new PdIDTO(pdi.getId().toString(), pdi.getHecho())).toList();
+  }
 
-        PdI nuevoPdI = recibirPdIDTO(pdiDTORecibido);
+  public List<PdIDTO> buscarTodos() {
+    List<PdI> pdIList = this.pdiRepository.findAll();
 
-        // Buscar duplicado a mano
-        Optional<PdI> yaProcesado =
-                pdiRepository.findByHechoId(nuevoPdI.getHechoId()).stream()
-                        .filter(
-                                p ->
-                                        p.getDescripcion().equals(nuevoPdI.getDescripcion())
-                                                && p.getLugar().equals(nuevoPdI.getLugar())
-                                                && p.getMomento().equals(nuevoPdI.getMomento())
-                                                && p.getContenido().equals(nuevoPdI.getContenido()))
-                        .findFirst();
+    return pdIList.stream().map(pdi -> new PdIDTO(pdi.getId().toString(), pdi.getHecho())).toList();
 
-        if (yaProcesado.isPresent()) {
-            return convertirADTO(yaProcesado.get());
-        }
+  }
 
-        nuevoPdI.setId(generadorID.getAndIncrement());
-        nuevoPdI.setEtiquetas(etiquetar(nuevoPdI.getContenido()));
-        pdiRepository.save(nuevoPdI);
 
-        System.out.println(
-                "Se guardó el PdI con ID "
-                        + nuevoPdI.getId()
-                        + " en hechoId: "
-                        + nuevoPdI.getHechoId());
-
-        PdIDTO pdiDTOAEnviar = convertirADTO(nuevoPdI);
-        return pdiDTOAEnviar;
-    }
-
-    @Override
-    public PdIDTO buscarPdIPorId(String idString) {
-        Long id = Long.parseLong(idString);
-        PdI pdi =
-                pdiRepository
-                        .findById(id)
-                        .orElseThrow(
-                                () ->
-                                        new NoSuchElementException(
-                                                "No se encontró el PdI con id: " + id));
-        PdIDTO pdiDTO = convertirADTO(pdi);
-        return pdiDTO;
-    }
-
-    @Override
-    public List<PdIDTO> buscarPorHecho(String hechoId) {
-        List<PdI> lista = pdiRepository.findByHechoId(hechoId);
-
-        System.out.println("Buscando por hechoId: " + hechoId + " - Encontrados: " + lista.size());
-
-        List<PdIDTO> listaPdiDTO =
-                lista.stream().map(this::convertirADTO).collect(Collectors.toList());
-
-        return listaPdiDTO;
-    }
-
-    public PdIDTO convertirADTO(PdI pdi) {
-        return new PdIDTO(
-                String.valueOf(pdi.getId()),
-                pdi.getHechoId(),
-                pdi.getDescripcion(),
-                pdi.getLugar(),
-                pdi.getMomento(),
-                pdi.getContenido(),
-                pdi.getEtiquetas());
-    }
-
-    public List<String> etiquetar(String contenido) {
-        List<String> etiquetas = new ArrayList<>();
-        if (contenido != null) {
-            if (contenido.toLowerCase().contains("fuego")) {
-                etiquetas.add("incendio");
-            }
-
-            if (contenido.toLowerCase().contains("agua")) {
-                etiquetas.add("inundación");
-            }
-        }
-        if (etiquetas.isEmpty()) {
-            etiquetas.add("sin clasificar");
-        }
-        return etiquetas;
-    }
-
-    public PdI recibirPdIDTO(PdIDTO pdiDTO) {
-        PdI nuevoPdI =
-                new PdI(
-                        pdiDTO.hechoId(),
-                        pdiDTO.descripcion(),
-                        pdiDTO.lugar(),
-                        pdiDTO.momento(),
-                        pdiDTO.contenido());
-        return nuevoPdI;
-    }
-
-    //    @Override
-    //    public List<PdIDTO> pdis() {
-    //        return this.PdIRepository.findAll()
-    //                .stream()
-    //                .map(this::convertirADTO)
-    //                .toList();
-    //    }
-
+  public void setFachadaSolicitudes(FachadaSolicitudes var1) {
+    fachadaSolicitudes = var1;
+  }
 }

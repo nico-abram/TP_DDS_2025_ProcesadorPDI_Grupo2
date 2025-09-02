@@ -1,51 +1,53 @@
 package ar.edu.utn.dds.k3003.controller;
 
-import ar.edu.utn.dds.k3003.facades.FachadaProcesadorPdI;
+import ar.edu.utn.dds.k3003.app.Fachada;
+import ar.edu.utn.dds.k3003.facades.FachadaFuente;
+import ar.edu.utn.dds.k3003.facades.FachadaSolicitudes;
+import ar.edu.utn.dds.k3003.facades.dtos.EstadoSolicitudBorradoEnum;
 import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
-
+import ar.edu.utn.dds.k3003.facades.dtos.SolicitudDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
-@RequestMapping("/api/pdis")
+@RequestMapping("/api/PdIs")
 public class PdIController {
 
-    private final FachadaProcesadorPdI fachadaProcesadorPdI;
+  private final Fachada fachada;
 
-    // Constructor
-    @Autowired
-    public PdIController(FachadaProcesadorPdI fachadaProcesadorPdI) {
-        this.fachadaProcesadorPdI = fachadaProcesadorPdI;
-    }
+  @Autowired
+  public PdIController(Fachada fachada) {
+    this.fachada = fachada;
+  }
 
-    // GET /pdis?hecho={hechoId}
-    // GET /pdis
-    @GetMapping
-    public ResponseEntity<List<PdIDTO>> listarPdisPorHecho(
-            @RequestParam(required = false) String hecho) {
-        if (hecho != null) {
-            // GET /pdis?hecho={hechoId}
-            return ResponseEntity.ok(fachadaProcesadorPdI.buscarPorHecho(hecho));
-        } else {
-            // GET /pdis
-            throw new UnsupportedOperationException("Falta agregar pids a FachadaProcesadorPdI");
-            // return ResponseEntity.ok(fachadaProcesadorPdI.pdis());
-        }
+  @GetMapping
+  public ResponseEntity<List<PdIDTO>> listarPdI(@RequestParam(value = "hecho", required = false) String hecho) {
+    if (hecho == null) {
+      // Si no se proporciona el parámetro "hecho", devuelve todos los PdIDTO
+      return ResponseEntity.ok(fachada.buscarTodos());
+    } else {
+      // Si se proporciona el parámetro "hecho", devuelve los PdIDTO filtrados por "hecho"
+      return ResponseEntity.ok(fachada.buscarPorHecho(hecho));
     }
+  }
 
-    // GET /pdis/{id}
-    @GetMapping("/{id}")
-    public ResponseEntity<PdIDTO> obtenerPdiPorId(@PathVariable Long id) {
-        PdIDTO dto = fachadaProcesadorPdI.buscarPdIPorId(String.valueOf(id));
-        return ResponseEntity.ok(dto);
-    }
+  @GetMapping("/{id}")
+  public ResponseEntity<PdIDTO> obtenerPdI(@PathVariable String id) {
+    return ResponseEntity.ok(fachada.buscarPdIPorId(id));
+  }
 
-    // POST /pdis
-    @PostMapping
-    public ResponseEntity<PdIDTO> procesarNuevoPdi(@RequestBody PdIDTO pdi) {
-        return ResponseEntity.ok(fachadaProcesadorPdI.procesar(pdi));
-    }
+  @PostMapping
+  public ResponseEntity<PdIDTO> crearPdI(@RequestBody PdIDTO pdIDTO) {
+    return ResponseEntity.ok(fachada.procesar(pdIDTO));
+  }
+
 }

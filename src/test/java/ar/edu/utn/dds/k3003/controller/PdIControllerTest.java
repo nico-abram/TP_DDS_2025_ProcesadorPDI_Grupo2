@@ -1,64 +1,83 @@
 package ar.edu.utn.dds.k3003.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
+import ar.edu.utn.dds.k3003.config.JacksonConfig;
 import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Arrays;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @ActiveProfiles("test")
+@Import(JacksonConfig.class)
 public class PdIControllerTest {
 
-    @Autowired private MockMvc mockMvc;
+  @Autowired
+  private MockMvc mockMvc;
 
-    @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  private ObjectMapper objectMapper;
 
-    private final String hechoId = "hecho123";
+  @Test
+  @Order(1)
+  public void listarColecciones_DeberiaRetornarListaVacia() throws Exception {
+    mockMvc.perform(get("/api/PdIs"))
+        .andExpect(status().isOk())
+        .andExpect(content().json("[]"));
+  }
 
-    @Test
-    public void listarPdis_DeberiaRetornarListaVacia() throws Exception {
-        mockMvc.perform(get("/pdis?hecho=" + hechoId))
-                .andExpect(status().isOk())
-                .andExpect(content().json("[]"));
-    }
+  @Test
+  @Order(2)
+  public void crearPdI_DeberiaRetornarPdIcreados() throws Exception {
+    PdIDTO nuevoPdI = new PdIDTO("testId", "hecho1");
+    PdIDTO nuevoPdI2 = new PdIDTO("testId2", "hecho2");
 
-    @Test
-    public void crearPdI_DeberiaRetornarPdICreado() throws Exception {
-        PdIDTO nuevoPdI =
-                new PdIDTO(
-                        "", // id se ignora
-                        hechoId,
-                        "Incendio en bosque",
-                        "Patagonia",
-                        LocalDateTime.now(),
-                        "fuego y humo visible",
-                        List.of());
+    mockMvc.perform(post("/api/PdIs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(nuevoPdI)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value("testId"))
+        .andExpect(jsonPath("$.hecho_id").value("hecho1"));
 
-        mockMvc.perform(
-                        post("/pdis")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(nuevoPdI)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hecho_id").value(hechoId))
-                .andExpect(jsonPath("$.descripcion").value("Incendio en bosque"));
+    mockMvc.perform(post("/api/PdIs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(nuevoPdI2)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value("testId2"))
+        .andExpect(jsonPath("$.hecho_id").value("hecho2"));
 
-        // Verificar que se guardó
-        mockMvc.perform(get("/pdis?hecho=" + hechoId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].hecho_id").value(hechoId));
-    }
+    // Verificar que el PdI fue creado
+    mockMvc.perform(get("/api/PdIs"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value("testId"));
+
+    mockMvc.perform(get("/api/PdIs")
+        .queryParam("hecho_id", "hecho1"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].hecho_id").value("hecho1"));
+  }
+  @Test
+  @Order(3)
+  public void listarPdIsCreadosAnteriormente() throws Exception {
+    mockMvc.perform(get("/api/PdIs"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value("testId"))
+        .andExpect(jsonPath("$[1].id").value("testId2"));
+  }
 }

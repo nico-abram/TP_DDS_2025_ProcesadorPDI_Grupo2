@@ -1,114 +1,80 @@
 package ar.edu.utn.dds.k3003.app;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import ar.edu.utn.dds.k3003.facades.FachadaProcesadorPdI;
 import ar.edu.utn.dds.k3003.facades.FachadaSolicitudes;
 import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
-import ar.edu.utn.dds.k3003.model.PdI;
-import ar.edu.utn.dds.k3003.repository.InMemoryPdIRepo;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
+import ar.edu.utn.dds.k3003.tests.TestTP;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class FachadaTest {
+@ExtendWith({MockitoExtension.class})
+public class FachadaTest implements TestTP<FachadaProcesadorPdI> {
+  private static final String UN_HECHO_ID = "unHechoId";
+  public static final PdIDTO PDI = new PdIDTO("1", "unHechoId", "una info", "bsas", LocalDateTime.now(), "1234556", List.of());
+  private static final String PDI_ID = "unPDIid";
+  private FachadaProcesadorPdI instancia;
+  private PdIDTO pdi1;
+  private PdIDTO pdi2;
+  @Mock
+  FachadaSolicitudes fachadaSolicitudes;
 
-    @Test
-    @DisplayName("setFachadaSolicitudes permite usar la fachada mockeada correctamente")
-    void testSetFachadaSolicitudes() {
-        Fachada fachada = new Fachada();
-        FachadaSolicitudes mockSolicitudes = mock(FachadaSolicitudes.class);
-        when(mockSolicitudes.estaActivo("hecho-x")).thenReturn(true);
-
-        fachada.setFachadaSolicitudes(mockSolicitudes);
-
-        boolean resultado = mockSolicitudes.estaActivo("hecho-x");
-        assertTrue(resultado, "La fachada mockeada debe estar correctamente asignada");
+  @BeforeEach
+  void setUp() throws Exception {
+    try {
+      this.instancia = (FachadaProcesadorPdI)this.instance();
+      this.instancia.setFachadaSolicitudes(this.fachadaSolicitudes);
+    } catch (Throwable $ex) {
+      throw $ex;
     }
+  }
 
-    @Test
-    @DisplayName(
-            "buscarPdIPorId devuelve correctamente un PdI previamente guardado sin usar procesar")
-    void testBuscarPdIPorId() {
-        InMemoryPdIRepo repositorio = new InMemoryPdIRepo();
-        Fachada fachada = new Fachada(repositorio);
-        FachadaSolicitudes mockSolicitudes = mock(FachadaSolicitudes.class);
-        fachada.setFachadaSolicitudes(mockSolicitudes);
+  @Test
+  @DisplayName("Procesar PdIs")
+  void testProcesarPdI() {
+    Mockito.when(this.fachadaSolicitudes.estaActivo("unHechoId")).thenReturn(true);
+    PdIDTO pdi1 = this.instancia.procesar(PDI);
+    this.instancia.procesar(PDI);
+    Assertions.assertNotNull(pdi1.id(), "El PdI deberia tener un identificador no nulo");
+    Assertions.assertEquals(pdi1.hechoId(), this.instancia.buscarPdIPorId(pdi1.id()).hechoId(), "No se esta recuperando el PdI correctamente");
+    Assertions.assertEquals(1, this.instancia.buscarPorHecho("unHechoId").size(), "No se estan sumando correctamente los PdIs");
+  }
 
-        PdI nuevo = new PdI("hecho-test", "desc", "lugar", LocalDateTime.now(), "contenido");
-        nuevo.setId(1L);
-        nuevo.setEtiquetas(List.of("prueba"));
+  @Test
+  @DisplayName("Procesar PdI que fue borrado")
+  void testProcesarPdICerrado() {
+    Mockito.when(this.fachadaSolicitudes.estaActivo("unHechoId")).thenReturn(false);
+    Assertions.assertThrows(IllegalStateException.class, () -> this.instancia.procesar(PDI));
+  }
 
-        repositorio.save(nuevo); // delegación directa al repo
+  @Test
+  @DisplayName("Buscar PdI por hecho")
+  void testBuscarPdiPorHecho() {
+    Mockito.when(this.fachadaSolicitudes.estaActivo("unHechoId")).thenReturn(true);
+    this.instancia.procesar(PDI);
+    Assertions.assertEquals(UN_HECHO_ID, instancia.buscarPorHecho(UN_HECHO_ID).get(0).hechoId());
+  }
 
-        PdIDTO recuperado = fachada.buscarPdIPorId("1");
+  @Test
+  @DisplayName("Buscar PdI por ID")
+  void testBuscarPdiPorID() {
+    Mockito.when(this.fachadaSolicitudes.estaActivo("unHechoId")).thenReturn(true);
+    this.instancia.procesar(PDI);
+    Assertions.assertEquals(UN_HECHO_ID, instancia.buscarPdIPorId(PDI.id()).hechoId());
+  }
 
-        assertEquals("hecho-test", recuperado.hechoId(), "El hechoId debe coincidir");
-        assertEquals("desc", recuperado.descripcion(), "La descripción debe coincidir");
-        assertEquals("lugar", recuperado.lugar(), "El lugar debe coincidir");
-    }
+  public String paquete() {
+    return "ar.edu.utn.dds.k3003.tests.pdi";
+  }
 
-    @Test
-    @DisplayName("buscarPorHecho devuelve correctamente los PdIs guardados sin usar procesar")
-    void testBuscarPorHecho() {
-        InMemoryPdIRepo repositorio = new InMemoryPdIRepo();
-        Fachada fachada = new Fachada(repositorio);
-        FachadaSolicitudes mockSolicitudes = mock(FachadaSolicitudes.class);
-        fachada.setFachadaSolicitudes(mockSolicitudes);
-
-        PdI pdi1 = new PdI("hecho-xyz", "desc1", "lugar1", LocalDateTime.now(), "contenido");
-        PdI pdi2 = new PdI("hecho-xyz", "desc2", "lugar2", LocalDateTime.now(), "contenido");
-
-        pdi1.setId(1L);
-        pdi2.setId(2L);
-        pdi1.setEtiquetas(List.of("etiqueta1"));
-        pdi2.setEtiquetas(List.of("etiqueta2"));
-
-        repositorio.save(pdi1);
-        repositorio.save(pdi2);
-
-        List<PdIDTO> resultados = fachada.buscarPorHecho("hecho-xyz");
-
-        assertEquals(2, resultados.size(), "Debe haber 2 PdIs asociadas al hecho");
-        assertEquals("desc1", resultados.get(0).descripcion());
-        assertEquals("desc2", resultados.get(1).descripcion());
-    }
-
-    @Test
-    @DisplayName("procesar retorna un PdIDTO con los datos esperados")
-    void testProcesar() {
-        InMemoryPdIRepo repositorio = new InMemoryPdIRepo();
-        Fachada fachada = new Fachada(repositorio);
-        FachadaSolicitudes mockSolicitudes = mock(FachadaSolicitudes.class);
-        fachada.setFachadaSolicitudes(mockSolicitudes);
-        when(mockSolicitudes.estaActivo("hecho-123")).thenReturn(true);
-
-        PdIDTO dtoEntrada =
-                new PdIDTO(
-                        null,
-                        "hecho-123",
-                        "descripcion prueba",
-                        "CABA",
-                        LocalDateTime.of(2025, 5, 17, 15, 30),
-                        "contenido con fuego",
-                        List.of());
-
-        PdIDTO resultado = fachada.procesar(dtoEntrada);
-
-        assertEquals("hecho-123", resultado.hechoId(), "El hechoId debe coincidir");
-        assertEquals(
-                "descripcion prueba", resultado.descripcion(), "La descripción debe coincidir");
-        assertEquals("CABA", resultado.lugar(), "El lugar debe coincidir");
-        assertEquals(
-                LocalDateTime.of(2025, 5, 17, 15, 30),
-                resultado.momento(),
-                "La fecha debe coincidir");
-        assertEquals("contenido con fuego", resultado.contenido(), "El contenido debe coincidir");
-        assertTrue(resultado.etiquetas().contains("incendio"), "Debe tener la etiqueta 'incendio'");
-    }
+  public Class<FachadaProcesadorPdI> clase() {
+    return FachadaProcesadorPdI.class;
+  }
 }
