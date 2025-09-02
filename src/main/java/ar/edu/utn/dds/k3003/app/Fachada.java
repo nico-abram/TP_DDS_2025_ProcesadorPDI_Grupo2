@@ -64,7 +64,7 @@ public class Fachada implements FachadaProcesadorPdI {
         }
 
         if (!activo) {
-            throw new HechoInactivoException(hechoId);
+            throw new IllegalStateException(hechoId);
         }
 
         PdI nuevoPdI = recibirPdIDTO(pdiDTORecibido);
