@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
-@RequestMapping("/api/PdIs")
+@RequestMapping("/api")
 public class PdIController {
 
   private final Fachada fachada;
@@ -29,7 +29,7 @@ public class PdIController {
     this.fachada = fachada;
   }
 
-  @GetMapping
+  @GetMapping("/pdis")
   public ResponseEntity<List<PdIDTO>> listarPdI(@RequestParam(value = "hecho", required = false) String hecho) {
     if (hecho == null) {
       // Si no se proporciona el parámetro "hecho", devuelve todos los PdIDTO
@@ -40,12 +40,12 @@ public class PdIController {
     }
   }
 
-  @GetMapping("/{id}")
+  @GetMapping("/pdis/{id}")
   public ResponseEntity<PdIDTO> obtenerPdI(@PathVariable String id) {
     return ResponseEntity.ok(fachada.buscarPdIPorId(id));
   }
 
-  @PostMapping
+  @PostMapping("/pdis")
   public ResponseEntity<PdIDTO> crearPdI(@RequestBody PdIDTO pdIDTO) {
     return ResponseEntity.ok(fachada.procesar(pdIDTO));
   }
