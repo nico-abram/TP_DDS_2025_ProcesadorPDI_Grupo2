@@ -12,6 +12,7 @@ import java.util.NoSuchElementException;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+/*
   @ExceptionHandler(NoSuchElementException.class)
   public ResponseEntity<Map<String, String>> handleNoSuchElementException(NoSuchElementException e) {
     Map<String, String> response = new HashMap<>();
@@ -35,4 +36,5 @@ public class GlobalExceptionHandler {
     response.put("message", "An unexpected error occurred");
     return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
   }
+*/
 }
