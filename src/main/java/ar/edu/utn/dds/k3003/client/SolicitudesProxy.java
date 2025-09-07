@@ -59,13 +59,14 @@ public class SolicitudesProxy implements FachadaSolicitudes {
   @SneakyThrows
   @Override
   public boolean estaActivo(String hechoId) {
-    Response<List<SolicitudDTO>> execute = service.get(hechoId).execute();
+    Response<Boolean> execute = service.get(hechoId).execute();
     if (execute.isSuccessful()) {
-        var sols = execute.body();
-        return sols.isEmpty() || !sols.stream().anyMatch(s -> s.estado().equals(EstadoSolicitudBorradoEnum.ACEPTADA));
+        var activo = execute.body();
+        return activo.booleanValue();
+//        return sols.isEmpty() || !sols.stream().anyMatch(s -> s.estado().equals(EstadoSolicitudBorradoEnum.ACEPTADA));
     }
     if(execute.code() == HttpStatus.NOT_FOUND.getCode()) {
-      throw new NoSuchElementException("no se encontro el hecho");
+      throw new NoSuchElementException("No se encontro el hecho");
     }
     throw new RuntimeException("Error conectandose con solicitudes");
   }
