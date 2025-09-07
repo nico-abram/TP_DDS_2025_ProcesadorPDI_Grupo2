@@ -20,7 +20,7 @@ public class SolicitudesProxy implements FachadaSolicitudes {
   public SolicitudesProxy(ObjectMapper objectMapper) {
 
     var env = System.getenv();
-    this.endpoint = env.getOrDefault("https://two025-tp-entrega-2-stephieortiz.onrender.com/", "http://localhost:8081/");
+    this.endpoint = env.getOrDefault("URL_SOLICITUDES", "https://two025-tp-dds-solicitudes.onrender.com/");
 
     var retrofit =
         new Retrofit.Builder()
@@ -58,14 +58,14 @@ public class SolicitudesProxy implements FachadaSolicitudes {
 
   @SneakyThrows
   @Override
-  public boolean estaActivo(String s) {
-    Response<SolicitudDTO> execute = service.get(s).execute();
+  public boolean estaActivo(String hechoId) {
+    Response<List<SolicitudDTO>> execute = service.get(hechoId).execute();
     if (execute.isSuccessful()) {
-
-    return !execute.body().estado().equals(EstadoSolicitudBorradoEnum.RECHAZADA);
+        var sols = execute.body();
+        return sols.isEmpty() || !sols.stream().anyMatch(s -> s.estado().equals(EstadoSolicitudBorradoEnum.ACEPTADA));
     }
     if(execute.code() == HttpStatus.NOT_FOUND.getCode()) {
-      throw new NoSuchElementException("no est activo la solicitud");
+      throw new NoSuchElementException("no se encontro el hecho");
     }
     throw new RuntimeException("Error conectandose con solicitudes");
   }
