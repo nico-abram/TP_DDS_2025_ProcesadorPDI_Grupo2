@@ -33,18 +33,18 @@ public class Fachada implements FachadaProcesadorPdI {
     this.fachadaSolicitudes = new SolicitudesProxy(objectMapper);
   }
 
-  public PdIDTO procesar(PdIDTO var1) throws IllegalStateException {
+  public PdIDTO procesar(PdIDTO pdiDto) throws IllegalStateException {
 
 
-    if(fachadaSolicitudes.estaActivo(var1.hechoId())) {
-      if(buscarPorHecho(var1.hechoId()).isEmpty()) {
-        PdI pdiNuevo = new PdI(var1.id(), var1.hechoId());
+    if(fachadaSolicitudes.estaActivo(pdiDto.hechoId())) {
+      if(buscarPorHecho(pdiDto.hechoId()).isEmpty()) {
+        PdI pdiNuevo = new PdI(pdiDto);
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);
-        return new PdIDTO(pdiNuevo.getId().toString(), pdiNuevo.getHecho());
+        return pdiNuevo.dto();
       }
       else {
-        return buscarPorHecho(var1.hechoId()).get(0);
+        return buscarPorHecho(pdiDto.hechoId()).get(0);
       }
     } else {
       throw new IllegalStateException("No esta activo");
@@ -60,26 +60,31 @@ public class Fachada implements FachadaProcesadorPdI {
 
     PdI pdi = pdIOptional.get();
 
-    return new PdIDTO(pdi.getId().toString(), pdi.getHecho());
+    return pdi.dto();
   }
 
 
   public List<PdIDTO> buscarPorHecho(String var1) throws NoSuchElementException {
 
-    List<PdI> pdIList = this.pdiRepository.findByHecho(var1);
+    List<PdI> pdIList = this.pdiRepository.findByHechoId(var1);
 
-    return pdIList.stream().map(pdi -> new PdIDTO(pdi.getId().toString(), pdi.getHecho())).toList();
+    return pdIList.stream().map(pdi -> pdi.dto()).toList();
   }
 
   public List<PdIDTO> buscarTodos() {
     List<PdI> pdIList = this.pdiRepository.findAll();
 
-    return pdIList.stream().map(pdi -> new PdIDTO(pdi.getId().toString(), pdi.getHecho())).toList();
+    return pdIList.stream().map(pdi -> pdi.dto()).toList();
 
   }
 
 
   public void setFachadaSolicitudes(FachadaSolicitudes var1) {
     fachadaSolicitudes = var1;
+  }
+
+  public String borrarTodo() {
+    pdiRepository.deleteAllInBatch();
+    return "Borrado exitosamente";
   }
 }

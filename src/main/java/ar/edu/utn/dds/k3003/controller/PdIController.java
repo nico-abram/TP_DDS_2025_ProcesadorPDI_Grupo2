@@ -9,6 +9,7 @@ import ar.edu.utn.dds.k3003.facades.dtos.SolicitudDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,6 +49,11 @@ public class PdIController {
   @PostMapping("/pdis")
   public ResponseEntity<PdIDTO> crearPdI(@RequestBody PdIDTO pdIDTO) {
     return ResponseEntity.ok(fachada.procesar(pdIDTO));
+  }
+
+  @DeleteMapping("/todo")
+  public ResponseEntity<String> borrarTodo() {
+    return ResponseEntity.ok(fachada.borrarTodo());
   }
 
 }

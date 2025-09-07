@@ -19,8 +19,8 @@ public class InMemoryPdIRepo implements PdIRepository{
     return this.pdis.stream().filter(pdI -> pdI.getId().equals(id)).findFirst();
   }
   @Override
-  public List<PdI> findByHecho(String hecho) {
-    return this.pdis.stream().filter(pdI -> pdI.getHecho().equals(hecho)).toList();
+  public List<PdI> findByHechoId(String hechoId) {
+    return this.pdis.stream().filter(pdI -> pdI.getHechoId().equals(hechoId)).toList();
   }
   @Override
   public List<PdI> findAll() {
@@ -30,5 +30,8 @@ public class InMemoryPdIRepo implements PdIRepository{
   public PdI save(PdI pdi) {
     this.pdis.add(pdi);
     return pdi;
+  }
+  @Override
+  public void deleteAllInBatch() {
   }
 }
