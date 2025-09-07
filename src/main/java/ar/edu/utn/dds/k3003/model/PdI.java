@@ -1,7 +1,6 @@
 package ar.edu.utn.dds.k3003.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
 import java.time.LocalDateTime;
@@ -11,6 +10,7 @@ import java.util.List;
 @Entity
 public class PdI {
   @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
   private String hecho;
 
