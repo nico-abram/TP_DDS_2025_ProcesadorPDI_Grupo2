@@ -7,6 +7,7 @@ import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
 import ar.edu.utn.dds.k3003.model.PdI;
 import ar.edu.utn.dds.k3003.repository.InMemoryPdIRepo;
 import ar.edu.utn.dds.k3003.repository.PdIRepository;
+import ar.edu.utn.dds.k3003.services.OcrService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class Fachada implements FachadaProcesadorPdI {
   private PdIRepository pdiRepository;
   private Integer pdiID = 0;
   private FachadaSolicitudes fachadaSolicitudes;
+  private OcrService ocrService;
   private ObjectMapper objectMapper;
 
   public Fachada() {
