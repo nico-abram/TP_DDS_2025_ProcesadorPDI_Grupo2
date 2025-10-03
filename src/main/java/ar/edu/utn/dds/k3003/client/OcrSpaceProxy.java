@@ -2,9 +2,11 @@ package ar.edu.utn.dds.k3003.client;
 
 import ar.edu.utn.dds.k3003.services.OcrService;
 import okhttp3.OkHttpClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.RequestBody;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
 public class OcrSpaceProxy implements OcrService {
 
@@ -18,12 +20,14 @@ public class OcrSpaceProxy implements OcrService {
 
         OkHttpClient client = new OkHttpClient.Builder().build();
 
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(env.getOrDefault("URL_OCR", "https://api.ocr.space")) // base URL de OCR.Space
                 .client(client)
-                .addConverterFactory(JacksonConverterFactory.create())
+                .addConverterFactory(JacksonConverterFactory.create(objectMapper))
                 .build();
 
         api = retrofit.create(OcrSpaceApiRetrofitClient.class);

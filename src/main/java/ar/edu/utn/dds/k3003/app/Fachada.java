@@ -66,7 +66,12 @@ public class Fachada {
 //             restTemplate.exchange(pdiDto.urlImagen(), HttpMethod.GET, entity, returnClass);
 //        byte[] bytesImagen = restTemplate.getForObject(pdiDto.urlImagen(), byte[].class);
         pdiNuevo.setContenido(ocrService.procesarImagen(pdiNuevo.getUrlImagen()));
-        pdiNuevo.etiquetas = etiquetadoService.procesarImagen(pdiDto.urlImagen());
+        try {
+          pdiNuevo.etiquetas = etiquetadoService.procesarImagen(pdiDto.urlImagen());
+        } catch (Exception e) {
+          System.out.println("Error llamando a la api de etiquetado");
+          pdiNuevo.etiquetas = List.of();
+        }
 
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);

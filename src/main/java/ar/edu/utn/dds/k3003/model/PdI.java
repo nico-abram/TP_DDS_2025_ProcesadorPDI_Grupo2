@@ -13,12 +13,13 @@ import java.util.List;
 @Entity
 public class PdI {
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private String id;
   private String hechoId;
   private String descripcion;
   private String lugar;
   private LocalDateTime momento;
+  @Column(name = "contenido", length = 1048576)
   private String contenido;
   private String urlImagen;
 
