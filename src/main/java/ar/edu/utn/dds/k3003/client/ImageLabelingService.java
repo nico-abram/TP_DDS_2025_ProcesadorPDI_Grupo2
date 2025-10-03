@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface ImageLabelingService {
 
-  public List<String> procesarImagen(byte[] imagen);
+  public List<String> procesarImagen(String imagen);
 
 }

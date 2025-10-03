@@ -40,6 +40,7 @@ public class ApiLayerImageLabelingProxy implements ImageLabelingService {
   @SneakyThrows
   @Override
   public List<String> procesarImagen(String imageUrl) {
+    var env = System.getenv();
     Response<List<ApiLayerLabel>> execute = service.getImage(imageUrl, env.getOrDefault("APIKEY_APILAYER", "")).execute();
     if (execute.isSuccessful()) {
         var etiquetas = execute.body();
