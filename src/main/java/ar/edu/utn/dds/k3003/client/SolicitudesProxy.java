@@ -12,7 +12,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-public class SolicitudesProxy implements FachadaSolicitudes {
+public class SolicitudesProxy {
 
   private final String endpoint;
   private final SolicitudRetrofitClient service;
@@ -36,29 +36,9 @@ public class SolicitudesProxy implements FachadaSolicitudes {
     this.service = service;
   }
 
-  @Override
-  public SolicitudDTO agregar(SolicitudDTO solicitudDTO) {
-    return null;
-  }
-
-  @Override
-  public SolicitudDTO modificar(String s, EstadoSolicitudBorradoEnum estadoSolicitudBorradoEnum, String s1) throws NoSuchElementException {
-    return null;
-  }
-
-  @Override
-  public List<SolicitudDTO> buscarSolicitudXHecho(String s) {
-    return List.of();
-  }
-
-  @Override
-  public SolicitudDTO buscarSolicitudXId(String s) {
-    return null;
-  }
 
   @SneakyThrows
-  @Override
-  public boolean estaActivo(String hechoId) {
+  public boolean estaActivo(String hechoId) throws java.io.IOException {
     Response<Boolean> execute = service.get(hechoId).execute();
     if (execute.isSuccessful()) {
         var activo = execute.body();
@@ -69,10 +49,5 @@ public class SolicitudesProxy implements FachadaSolicitudes {
       throw new NoSuchElementException("No se encontro el hecho");
     }
     throw new RuntimeException("Error conectandose con solicitudes");
-  }
-
-  @Override
-  public void setFachadaFuente(FachadaFuente fachadaFuente) {
-
   }
 }

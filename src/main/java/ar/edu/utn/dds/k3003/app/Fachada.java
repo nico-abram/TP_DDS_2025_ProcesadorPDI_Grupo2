@@ -1,16 +1,19 @@
 package ar.edu.utn.dds.k3003.app;
 
+import ar.edu.utn.dds.k3003.client.OcrSpaceProxy;
 import ar.edu.utn.dds.k3003.client.SolicitudesProxy;
 import ar.edu.utn.dds.k3003.facades.FachadaProcesadorPdI;
 import ar.edu.utn.dds.k3003.facades.FachadaSolicitudes;
 import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
 import ar.edu.utn.dds.k3003.model.PdI;
-import ar.edu.utn.dds.k3003.repository.InMemoryPdIRepo;
 import ar.edu.utn.dds.k3003.repository.PdIRepository;
 import ar.edu.utn.dds.k3003.services.OcrService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -20,26 +23,31 @@ public class Fachada implements FachadaProcesadorPdI {
 
   private PdIRepository pdiRepository;
   private Integer pdiID = 0;
-  private FachadaSolicitudes fachadaSolicitudes;
+  private SolicitudesProxy fachadaSolicitudes;
   private OcrService ocrService;
   private ObjectMapper objectMapper;
-
-  public Fachada() {
-    this.pdiRepository = new InMemoryPdIRepo();
-  }
 
   @Autowired
   public Fachada(PdIRepository pdiRepository) {
     this.pdiRepository = pdiRepository;
     this.objectMapper = new ObjectMapper();
     this.fachadaSolicitudes = new SolicitudesProxy(objectMapper);
+    this.ocrService = new OcrSpaceProxy();
   }
 
+  @SneakyThrows
   public PdIDTO procesar(PdIDTO pdiDto) throws IllegalStateException {
 
+    var activo = false;
+    try {
+      activo = fachadaSolicitudes.estaActivo(pdiDto.hechoId());
+    } catch(IOException ex) {
+      throw new IllegalStateException("Error llamando a solicitudes");
+    }
 
-    if(fachadaSolicitudes.estaActivo(pdiDto.hechoId())) {
+    if(activo) {
       if(buscarPorHecho(pdiDto.hechoId()).isEmpty()) {
+        //procesarImagen
         PdI pdiNuevo = new PdI(pdiDto);
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);
@@ -82,7 +90,7 @@ public class Fachada implements FachadaProcesadorPdI {
 
 
   public void setFachadaSolicitudes(FachadaSolicitudes var1) {
-    fachadaSolicitudes = var1;
+
   }
 
   public String borrarTodo() {
