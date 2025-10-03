@@ -65,7 +65,7 @@ public class Fachada {
 //     ResponseEntity<?> result =
 //             restTemplate.exchange(pdiDto.urlImagen(), HttpMethod.GET, entity, returnClass);
 //        byte[] bytesImagen = restTemplate.getForObject(pdiDto.urlImagen(), byte[].class);
-
+        pdiNuevo.setContenido(ocrService.procesarImagen(pdiNuevo.getUrlImagen()));
         pdiNuevo.etiquetas = etiquetadoService.procesarImagen(pdiDto.urlImagen());
 
         //pdiID++;
