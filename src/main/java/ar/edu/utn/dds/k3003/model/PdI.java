@@ -13,7 +13,7 @@ import java.util.List;
 @Entity
 public class PdI {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
   private String hechoId;
   private String descripcion;
