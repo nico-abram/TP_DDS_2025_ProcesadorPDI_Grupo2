@@ -21,7 +21,7 @@ public class OcrSpaceProxy implements OcrService {
 
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.ocr.space") // base URL de OCR.Space
+                .baseUrl(env.getOrDefault("URL_OCR", "https://api.ocr.space")) // base URL de OCR.Space
                 .client(client)
                 .addConverterFactory(JacksonConverterFactory.create())
                 .build();
