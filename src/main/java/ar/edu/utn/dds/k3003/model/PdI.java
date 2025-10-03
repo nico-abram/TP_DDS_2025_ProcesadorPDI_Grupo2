@@ -1,6 +1,6 @@
 package ar.edu.utn.dds.k3003.model;
 
-import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
+import ar.edu.utn.dds.k3003.dtos.PdIDTO;
 import java.util.ArrayList;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -20,11 +20,12 @@ public class PdI {
   private String lugar;
   private LocalDateTime momento;
   private String contenido;
+  private String urlImagen;
 
   @ElementCollection
   @CollectionTable(name = "pdi_etiquetas", joinColumns = @JoinColumn(name = "pdi_id"))
   @Column(name = "etiqueta")
-  private List<String> etiquetas = new ArrayList<>();
+  public List<String> etiquetas = new ArrayList<>();
 
 /*
   public PdI(String id, String hecho){
@@ -40,6 +41,7 @@ public class PdI {
     this.momento = dto.momento();
     this.contenido = dto.contenido();
     this.etiquetas = dto.etiquetas();
+    this.urlImagen = dto.urlImagen();
   }
 
   public PdI() {
@@ -47,6 +49,6 @@ public class PdI {
   }
 
   public PdIDTO dto() {
-     return new PdIDTO(id, hechoId, descripcion, lugar, momento, contenido, etiquetas);
+     return new PdIDTO(id, hechoId, descripcion, lugar, momento, contenido, etiquetas, urlImagen);
   }
 }

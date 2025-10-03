@@ -1,13 +1,15 @@
 package ar.edu.utn.dds.k3003.app;
 
 import ar.edu.utn.dds.k3003.client.SolicitudesProxy;
+import ar.edu.utn.dds.k3003.client.ApiLayerImageLabelingProxy;
 import ar.edu.utn.dds.k3003.facades.FachadaProcesadorPdI;
 import ar.edu.utn.dds.k3003.facades.FachadaSolicitudes;
-import ar.edu.utn.dds.k3003.facades.dtos.PdIDTO;
+import ar.edu.utn.dds.k3003.dtos.PdIDTO;
 import ar.edu.utn.dds.k3003.model.PdI;
 import ar.edu.utn.dds.k3003.repository.InMemoryPdIRepo;
 import ar.edu.utn.dds.k3003.repository.PdIRepository;
 import ar.edu.utn.dds.k3003.services.OcrService;
+import ar.edu.utn.dds.k3003.client.ImageLabelingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,13 +17,16 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import org.springframework.web.client.RestTemplate;
+
 @Service
-public class Fachada implements FachadaProcesadorPdI {
+public class Fachada {
 
   private PdIRepository pdiRepository;
   private Integer pdiID = 0;
   private FachadaSolicitudes fachadaSolicitudes;
   private OcrService ocrService;
+  private ImageLabelingService etiquetadoService;
   private ObjectMapper objectMapper;
 
   public Fachada() {
@@ -33,6 +38,7 @@ public class Fachada implements FachadaProcesadorPdI {
     this.pdiRepository = pdiRepository;
     this.objectMapper = new ObjectMapper();
     this.fachadaSolicitudes = new SolicitudesProxy(objectMapper);
+    this.etiquetadoService = new ApiLayerImageLabelingProxy(objectMapper);
   }
 
   public PdIDTO procesar(PdIDTO pdiDto) throws IllegalStateException {
@@ -41,6 +47,19 @@ public class Fachada implements FachadaProcesadorPdI {
     if(fachadaSolicitudes.estaActivo(pdiDto.hechoId())) {
       if(buscarPorHecho(pdiDto.hechoId()).isEmpty()) {
         PdI pdiNuevo = new PdI(pdiDto);
+
+//        RestTemplate restTemplate = new RestTemplate();
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+//        headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
+
+//     HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+//     ResponseEntity<?> result =
+//             restTemplate.exchange(pdiDto.urlImagen(), HttpMethod.GET, entity, returnClass);
+//        byte[] bytesImagen = restTemplate.getForObject(pdiDto.urlImagen(), byte[].class);
+
+        pdiNuevo.etiquetas = etiquetadoService.procesarImagen(pdiDto.urlImagen());
+
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);
         return pdiNuevo.dto();
