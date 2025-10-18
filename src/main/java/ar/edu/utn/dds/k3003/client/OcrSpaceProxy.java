@@ -35,12 +35,16 @@ public class OcrSpaceProxy implements OcrService {
 
     @Override
     public String procesarImagen(String imageUrl) throws Exception {
-        var response = api.parseImage(apiKey, imageUrl).execute();
+        try {
+            var response = api.parseImage(apiKey, imageUrl).execute();
 
-        if (!response.isSuccessful() || response.body() == null) {
-            throw new RuntimeException("Error al llamar al servicio OCR: " + response.code());
+            if (!response.isSuccessful() || response.body() == null) {
+                throw new RuntimeException("Error al llamar al servicio OCR: " + response.code());
+            }
+
+            return response.body().parsedResults.get(0).parsedText;
+        } catch (Exception ex) {
+            return "";
         }
-
-        return response.body().parsedResults.get(0).parsedText;
     }
 }

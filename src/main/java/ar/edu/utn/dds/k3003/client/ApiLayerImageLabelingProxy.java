@@ -12,7 +12,6 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-
 public class ApiLayerImageLabelingProxy implements ImageLabelingService {
 
   private final String endpoint;
@@ -40,14 +39,18 @@ public class ApiLayerImageLabelingProxy implements ImageLabelingService {
   @SneakyThrows
   @Override
   public List<String> procesarImagen(String imageUrl) {
-    var env = System.getenv();
-    Response<List<ApiLayerLabel>> execute = service.getImage(imageUrl, env.getOrDefault("APIKEY_APILAYER", "")).execute();
-    if (execute.isSuccessful()) {
-        var etiquetas = execute.body();
-        return etiquetas.stream().map(etiq -> etiq.label).toList();
-    }
+    try {
+        var env = System.getenv();
+        Response<List<ApiLayerLabel>> execute = service.getImage(imageUrl, env.getOrDefault("APIKEY_APILAYER", "")).execute();
+        if (execute.isSuccessful()) {
+            var etiquetas = execute.body();
+            return etiquetas.stream().map(etiq -> etiq.label).toList();
+        }
 
-    throw new RuntimeException("Error conectandose con ApiLayer");
+        throw new RuntimeException("Error conectandose con ApiLayer");
+    } catch (Exception ex) {
+        return new ArrayList<String>();
+    }
   }
 
 }
