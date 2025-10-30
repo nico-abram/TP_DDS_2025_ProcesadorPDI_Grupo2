@@ -1,5 +1,12 @@
 package ar.edu.utn.dds.k3003.app;
 
+import static com.mongodb.client.model.Filters.eq;
+import org.bson.Document;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+
 import ar.edu.utn.dds.k3003.client.OcrSpaceProxy;
 import ar.edu.utn.dds.k3003.client.SolicitudesProxy;
 import ar.edu.utn.dds.k3003.client.ApiLayerImageLabelingProxy;
@@ -16,7 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -75,6 +85,28 @@ public class Fachada {
 
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);
+
+        // Agregar en mongodb
+        Map<String, String> env = System.getenv();
+        try (MongoClient mongoClient = MongoClients.create(env.get("MONGODB_URI"))) {
+            MongoDatabase database = mongoClient.getDatabase("busqueda_hechos");
+            MongoCollection<Document> collection = database.getCollection("busqueda_hechos");
+            
+            Document query = new Document("hecho_id", new Document("$eq", pdiDto.hechoId()));
+            Document hecho = collection.find(query).first();
+
+            // List<String> tags = hecho.getList("tags", String.class);
+            List<String> tags = (List<String>)hecho.get("tags");
+            tags.addAll(Arrays.asList(pdiNuevo.getDescripcion().split("\\s+")));
+            tags.addAll(Arrays.asList(pdiNuevo.getLugar().split("\\s+")));
+            tags.addAll(Arrays.asList(pdiNuevo.getContenido().split("\\s+")));
+            tags.addAll(pdiNuevo.getEtiquetas());
+            hecho.append("tags", tags);
+            
+            // Document doc1 = new Document("hecho_id", guardado.getId()).append("tags", tags).append("titulo", guardado.getString("titulo"));
+            collection.replaceOne(query, hecho);
+        }
+
         return pdiNuevo.dto();
       }
       else {
