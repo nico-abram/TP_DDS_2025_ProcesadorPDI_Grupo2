@@ -16,12 +16,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class Application {
     public static void main(String[] args) throws IOException, TimeoutException {
-        var app = SpringApplication
-                .run(Application.class, args);
-
-
-
-
 
         Map<String, String> env = System.getenv();
         ConnectionFactory factory = new ConnectionFactory();
