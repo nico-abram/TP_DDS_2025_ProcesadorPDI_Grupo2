@@ -7,6 +7,8 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
+import com.rabbitmq.client.*;
+
 import ar.edu.utn.dds.k3003.client.OcrSpaceProxy;
 import ar.edu.utn.dds.k3003.client.SolicitudesProxy;
 import ar.edu.utn.dds.k3003.client.ApiLayerImageLabelingProxy;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.List;
 import java.util.Arrays;
@@ -75,6 +78,8 @@ public class Fachada {
 //     ResponseEntity<?> result =
 //             restTemplate.exchange(pdiDto.urlImagen(), HttpMethod.GET, entity, returnClass);
 //        byte[] bytesImagen = restTemplate.getForObject(pdiDto.urlImagen(), byte[].class);
+        /*
+        ESTO VA PARA EL WORKER Y DEVUELVO EL PdiId a fuente
         pdiNuevo.setContenido(ocrService.procesarImagen(pdiNuevo.getUrlImagen()));
         try {
           pdiNuevo.etiquetas = etiquetadoService.procesarImagen(pdiDto.urlImagen());
@@ -82,10 +87,13 @@ public class Fachada {
           System.out.println("Error llamando a la api de etiquetado");
           pdiNuevo.etiquetas = List.of();
         }
-
+        */
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);
+        //encolar
+        this.encolarPendienteDeProcesamiento(pdiNuevo);
 
+        /*
         // Agregar en mongodb
         Map<String, String> env = System.getenv();
         try (MongoClient mongoClient = MongoClients.create(env.get("MONGODB_URI"))) {
@@ -105,7 +113,9 @@ public class Fachada {
             
             // Document doc1 = new Document("hecho_id", guardado.getId()).append("tags", tags).append("titulo", guardado.getString("titulo"));
             collection.replaceOne(query, hecho);
+
         }
+         */
 
         return pdiNuevo.dto();
       }
@@ -114,6 +124,33 @@ public class Fachada {
       }
     } else {
       throw new IllegalStateException("No esta activo");
+    }
+  }
+
+  public void procesarPdiDesdeWorker(PdIDTO pdiSinEtiquetado) {
+    // TODO
+  }
+
+  private void encolarPendienteDeProcesamiento(PdI pdiNuevo) {
+    try {
+      Map<String, String> env = System.getenv();
+      ConnectionFactory factory = new ConnectionFactory();
+      factory.setHost(env.get("MESSAGEBROKER_HOST"));
+      factory.setUsername(env.get("MESSAGEBROKER_USERNAME"));
+      factory.setPassword(env.get("MESSAGEBROKER_PASSWORD"));
+      // En el plan más barato, el VHOST == USER
+      factory.setVirtualHost(env.get("MESSAGEBROKER_USERNAME"));
+      String exchangeName = env.get("MESSAGEBROKER_QUEUE_NAME");
+
+      Connection connection = factory.newConnection();
+      Channel channel = connection.createChannel();
+      channel.exchangeDeclare(exchangeName,  BuiltinExchangeType.FANOUT, true, false, false, Map.of(
+              "key", "value"
+      ));
+      String mensajeJson = objectMapper.writeValueAsString(pdiNuevo.dto());
+      channel.basicPublish(exchangeName, "", null, mensajeJson.getBytes(StandardCharsets.UTF_8));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 
