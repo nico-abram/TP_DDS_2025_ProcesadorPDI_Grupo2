@@ -144,11 +144,15 @@ public class Fachada {
 
       Connection connection = factory.newConnection();
       Channel channel = connection.createChannel();
+
+      String mensajeJson = objectMapper.writeValueAsString(pdiNuevo.dto());
+
       channel.exchangeDeclare(exchangeName,  BuiltinExchangeType.FANOUT, true, false, false, Map.of(
               "key", "value"
       ));
-      String mensajeJson = objectMapper.writeValueAsString(pdiNuevo.dto());
+
       channel.basicPublish(exchangeName, "", null, mensajeJson.getBytes(StandardCharsets.UTF_8));
+
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
