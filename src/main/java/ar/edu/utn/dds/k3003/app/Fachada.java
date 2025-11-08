@@ -106,6 +106,8 @@ public class Fachada {
           pdi.etiquetas = List.of();
       }
 
+      this.pdiRepository.save(pdi);
+
       // Agregar en mongodb
       Map<String, String> env = System.getenv();
       try (MongoClient mongoClient = MongoClients.create(env.get("MONGODB_URI"))) {
