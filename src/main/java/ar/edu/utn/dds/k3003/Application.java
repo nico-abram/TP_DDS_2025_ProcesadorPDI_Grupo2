@@ -19,6 +19,7 @@ public class Application {
         var app = SpringApplication
                 .run(Application.class, args);
 
+        try {
         Map<String, String> env = System.getenv();
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(env.get("MESSAGEBROKER_HOST"));
@@ -30,6 +31,10 @@ public class Application {
         Channel channel = connection.createChannel();
 
         MqTopicWorker worker = new MqTopicWorker(channel, exchangeName, app.getBean(Fachada.class));
+	worker.init();
 
+        } catch (Exception e) {
+            System.out.println(" Error conectandose a mongo: '" + e.getMessage() + "'");
+        }
     }
 }

@@ -70,53 +70,10 @@ public class Fachada {
         //procesarImagen
         PdI pdiNuevo = new PdI(pdiDto);
 
-//        RestTemplate restTemplate = new RestTemplate();
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-//        headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
-
-//     HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-//     ResponseEntity<?> result =
-//             restTemplate.exchange(pdiDto.urlImagen(), HttpMethod.GET, entity, returnClass);
-//        byte[] bytesImagen = restTemplate.getForObject(pdiDto.urlImagen(), byte[].class);
-        /*
-        ESTO VA PARA EL WORKER Y DEVUELVO EL PdiId a fuente
-        pdiNuevo.setContenido(ocrService.procesarImagen(pdiNuevo.getUrlImagen()));
-        try {
-          pdiNuevo.etiquetas = etiquetadoService.procesarImagen(pdiDto.urlImagen());
-        } catch (Exception e) {
-          System.out.println("Error llamando a la api de etiquetado");
-          pdiNuevo.etiquetas = List.of();
-        }
-        */
         //pdiID++;
         this.pdiRepository.save(pdiNuevo);
         //encolar
         this.encolarPendienteDeProcesamiento(pdiNuevo);
-
-        /*
-        // Agregar en mongodb
-        Map<String, String> env = System.getenv();
-        try (MongoClient mongoClient = MongoClients.create(env.get("MONGODB_URI"))) {
-            MongoDatabase database = mongoClient.getDatabase("busqueda_hechos");
-            MongoCollection<Document> collection = database.getCollection("busqueda_hechos");
-            
-            Document query = new Document("hecho_id", new Document("$eq", pdiDto.hechoId()));
-            Document hecho = collection.find(query).first();
-
-            // List<String> tags = hecho.getList("tags", String.class);
-            List<String> tags = (List<String>)hecho.get("tags");
-            tags.addAll(Arrays.asList(pdiNuevo.getDescripcion().split("\\s+")));
-            tags.addAll(Arrays.asList(pdiNuevo.getLugar().split("\\s+")));
-            tags.addAll(Arrays.asList(pdiNuevo.getContenido().split("\\s+")));
-            tags.addAll(pdiNuevo.getEtiquetas());
-            hecho.append("tags", tags);
-            
-            // Document doc1 = new Document("hecho_id", guardado.getId()).append("tags", tags).append("titulo", guardado.getString("titulo"));
-            collection.replaceOne(query, hecho);
-
-        }
-         */
 
         return pdiNuevo.dto();
       }
@@ -129,7 +86,47 @@ public class Fachada {
   }
 
   public void procesarPdiDesdeWorker(PdIDTO pdiSinEtiquetado) {
-    // TODO
+      Optional<PdI> pdIOptional = this.pdiRepository.findById(pdiSinEtiquetado.id());
+      if (pdIOptional.isEmpty()) {
+          throw new NoSuchElementException(pdIOptional + " no existe");
+      }
+
+      PdI pdi = pdIOptional.get();
+
+      try {
+        pdi.setContenido(ocrService.procesarImagen(pdi.getUrlImagen()));
+      } catch (Exception e) {
+          System.out.println("Error llamando a la api de OCR");
+          pdi.setContenido("");
+      }
+      try {
+          pdi.etiquetas = etiquetadoService.procesarImagen(pdi.getUrlImagen());
+      } catch (Exception e) {
+          System.out.println("Error llamando a la api de etiquetado");
+          pdi.etiquetas = List.of();
+      }
+
+      // Agregar en mongodb
+      Map<String, String> env = System.getenv();
+      try (MongoClient mongoClient = MongoClients.create(env.get("MONGODB_URI"))) {
+          MongoDatabase database = mongoClient.getDatabase("busqueda_hechos");
+          MongoCollection<Document> collection = database.getCollection("busqueda_hechos");
+
+          Document query = new Document("hecho_id", new Document("$eq", pdi.getHechoId()));
+          Document hecho = collection.find(query).first();
+
+          // List<String> tags = hecho.getList("tags", String.class);
+          List<String> tags = (List<String>)hecho.get("tags");
+          tags.addAll(Arrays.asList(pdi.getDescripcion().split("\\s+")));
+          tags.addAll(Arrays.asList(pdi.getLugar().split("\\s+")));
+          tags.addAll(Arrays.asList(pdi.getContenido().split("\\s+")));
+          tags.addAll(pdi.getEtiquetas());
+          hecho.append("tags", tags);
+
+          // Document doc1 = new Document("hecho_id", guardado.getId()).append("tags", tags).append("titulo", guardado.getString("titulo"));
+          collection.replaceOne(query, hecho);
+
+      }
   }
 
   private void encolarPendienteDeProcesamiento(PdI pdiNuevo) {
