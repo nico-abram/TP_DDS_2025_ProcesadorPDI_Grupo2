@@ -20,6 +20,7 @@ import ar.edu.utn.dds.k3003.repository.PdIRepository;
 import ar.edu.utn.dds.k3003.services.OcrService;
 import ar.edu.utn.dds.k3003.client.ImageLabelingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ar.edu.utn.dds.k3003.config.JacksonConfig;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,7 +49,7 @@ public class Fachada {
   @Autowired
   public Fachada(PdIRepository pdiRepository) {
     this.pdiRepository = pdiRepository;
-    this.objectMapper = new ObjectMapper();
+    this.objectMapper = (new JacksonConfig()).objectMapper();
     this.fachadaSolicitudes = new SolicitudesProxy(objectMapper);
     this.etiquetadoService = new ApiLayerImageLabelingProxy(objectMapper);
     this.ocrService = new OcrSpaceProxy();
