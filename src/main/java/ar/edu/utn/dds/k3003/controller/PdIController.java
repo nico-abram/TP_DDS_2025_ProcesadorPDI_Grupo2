@@ -41,6 +41,12 @@ public class PdIController {
     }
   }
 
+    @PostMapping("/pdis/{id}/process")
+    public ResponseEntity<Integer> procesarPdi(@PathVariable String id) {
+        fachada.procesarPdiDesdeWorker(id);
+        return ResponseEntity.ok(1);
+    }
+
   @GetMapping("/pdis/{id}")
   public ResponseEntity<PdIDTO> obtenerPdI(@PathVariable String id) {
     return ResponseEntity.ok(fachada.buscarPdIPorId(id));

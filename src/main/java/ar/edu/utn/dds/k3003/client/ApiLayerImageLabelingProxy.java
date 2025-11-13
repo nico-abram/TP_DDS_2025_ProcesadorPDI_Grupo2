@@ -44,7 +44,7 @@ public class ApiLayerImageLabelingProxy implements ImageLabelingService {
         Response<List<ApiLayerLabel>> execute = service.getImage(imageUrl, env.getOrDefault("APIKEY_APILAYER", "")).execute();
         if (execute.isSuccessful()) {
             var etiquetas = execute.body();
-            return etiquetas.stream().map(etiq -> etiq.label).toList();
+            return new ArrayList<>(etiquetas.stream().map(etiq -> etiq.label).toList());
         }
 
         throw new RuntimeException("Error conectandose con ApiLayer");

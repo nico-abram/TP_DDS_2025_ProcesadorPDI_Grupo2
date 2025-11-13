@@ -85,8 +85,8 @@ public class Fachada {
     }
   }
 
-  public void procesarPdiDesdeWorker(PdIDTO pdiSinEtiquetado) {
-      Optional<PdI> pdIOptional = this.pdiRepository.findById(pdiSinEtiquetado.id());
+  public void procesarPdiDesdeWorker(String id) {
+      Optional<PdI> pdIOptional = this.pdiRepository.findById(id);
       if (pdIOptional.isEmpty()) {
           throw new NoSuchElementException(pdIOptional + " no existe");
       }
@@ -103,7 +103,7 @@ public class Fachada {
           pdi.etiquetas = etiquetadoService.procesarImagen(pdi.getUrlImagen());
       } catch (Exception e) {
           System.out.println("Error llamando a la api de etiquetado");
-          pdi.etiquetas = List.of();
+          pdi.etiquetas = new ArrayList<>();
       }
 
       this.pdiRepository.save(pdi);
